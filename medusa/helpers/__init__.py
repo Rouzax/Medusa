@@ -1516,16 +1516,20 @@ def get_image_size(image_path):
             f.seek(0)  # Read 0xff next
             size = 2
             ftype = 0
-            while not 0xc0 <= ftype <= 0xcf:
+            while True:
                 f.seek(size, 1)
                 byte = f.read(1)
                 while ord(byte) == 0xff:
                     byte = f.read(1)
                 ftype = ord(byte)
                 size = struct.unpack('>H', f.read(2))[0] - 2
+                if 0xc0 <= ftype <= 0xcf and ftype not in (0xc4, 0xc8, 0xcc):
+                    break
             # We are at a SOFn block
             f.seek(1, 1)  # Skip `precision' byte.
-            return struct.unpack('>HH', f.read(4))
+            # JPEG SOF stores height before width
+            height, width = struct.unpack('>HH', f.read(4))
+            return width, height
 
 
 def remove_folder(folder_path, level=logging.WARNING):
